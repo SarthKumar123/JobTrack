@@ -14,7 +14,7 @@ Gmail inbox access and automated status suggestions are **not implemented yet**.
 
 ## Run locally
 
-Requirements: Java 17+, Maven 3.6.3+, Node.js 22.13+, and Google OAuth credentials. MySQL is optional for the first local run.
+Requirements: Java 17+, Maven 3.6.3+, Node.js 22.22.2+ (22.x), 24.15+ (24.x), or 26+, and Google OAuth credentials. MySQL is optional for the first local run.
 
 ### Google OAuth setup
 
@@ -39,9 +39,21 @@ mvn spring-boot:run "-Dspring-boot.run.profiles=local"
 
 The `local` profile uses a persistent H2 database in `backend/data/` so you can start without installing MySQL. It still requires Google sign-in; there is no authentication bypass. The application does not automatically load `.env` files; `backend/.env.example` documents the variable names.
 
+### Run the backend in Spring Tools for Eclipse (STS)
+
+Import `backend/` using **File > Import > Maven > Existing Maven Projects**. Open **Run > Run Configurations > Spring Boot App > JobTrackApplication**.
+
+- In **Environment**, add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` with values from the same OAuth client, without quotes.
+- In **Arguments > Program arguments**, enter `--spring.profiles.active=local`.
+- Click **Apply**, then **Run**. Wait for `Started JobTrackApplication` before opening the frontend.
+- Restart this configuration after changing environment variables. Do not commit credentials or shared launch configurations containing them.
+
+### Start the frontend
+
 In a second terminal, from the repository root:
 
 ```bash
+cd frontend
 npm ci
 npm run dev
 ```
@@ -62,9 +74,10 @@ Example JDBC URL: `jdbc:mysql://localhost:3306/jobtrack`. Flyway creates the sch
 ## Production build
 
 ```bash
+cd frontend
 npm ci
 npm run build
-cd backend
+cd ../backend
 mvn clean package
 ```
 
@@ -83,24 +96,27 @@ Sessions are stored in the running application, so users sign in again after a r
 
 ## Structure
 
-- `src/App.jsx`: workspace state and API actions
-- `src/components`: screens, forms and reusable UI
-- `src/lib/api.js`: requests, CSRF tokens and API errors
+React lives in `frontend/`; Spring Boot lives in `backend/`. Run npm commands inside `frontend/`.
+
+- `frontend/src/App.jsx`: workspace state and API actions
+- `frontend/src/components`: screens, forms and reusable UI
+- `frontend/src/lib/api.js`: requests, CSRF tokens and API errors
 - `backend/src/main/java/com/jobtrack/config`: login, sessions and validation errors
 - `backend/src/main/java/com/jobtrack/workspace`: controllers, service, repositories, entities and request/response records
 - `backend/src/main/resources/db/migration`: versioned SQL schema
-- `tests`: frontend workflow tests with a mock API
+- `frontend/tests`: frontend workflow tests with a mock API
 
 The backend gets the owner from the authenticated Google subject, never from the request body. Every record lookup checks that owner. Related interviews and follow-ups are checked against an owned application. Writes require Spring Security's CSRF token. Login uses only `openid`, `profile` and `email` scopes.
 
 ## Checks
 
 ```bash
+cd frontend
 npm run lint
 npm test
 npm run build
 npm run format:check
-cd backend
+cd ../backend
 mvn test
 ```
 
