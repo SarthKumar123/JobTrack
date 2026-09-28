@@ -30,8 +30,8 @@ export default function AppSidebar({
   go,
   apps,
   pending,
-  setPage,
-  setAuthNotice,
+  profile,
+  logout,
 }) {
   return (
     <Sidebar className="app-sidebar">
@@ -81,22 +81,16 @@ export default function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              className="nav-item"
-              onClick={() => {
-                setPage("Sign in");
-                setAuthNotice(false);
-              }}
-            >
+            <SidebarMenuButton className="nav-item" onClick={logout}>
               <LogOut size={19} />
-              Sign-in screen
+              Sign out
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
         <div className="profile">
-          <span className="avatar">SK</span>
+          <span className="avatar">{(profile.name || "User").slice(0, 1)}</span>
           <div>
-            <strong>Sarth Kumar</strong>
+            <strong>{profile.name || "Your workspace"}</strong>
             <small>Personal workspace</small>
           </div>
         </div>

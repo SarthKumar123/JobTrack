@@ -1,8 +1,8 @@
-import { Check, ArrowLeft } from "lucide-react";
+import { Check } from "lucide-react";
 
 import { Brand } from "@/components/common";
 
-export default function SignIn({ authNotice, setAuthNotice, go }) {
+export default function SignIn() {
   return (
     <main className="signin">
       <div className="signin-story">
@@ -32,21 +32,19 @@ export default function SignIn({ authNotice, setAuthNotice, go }) {
         <Brand />
         <h2>Welcome to JobTrack</h2>
         <p>Make room for your next opportunity.</p>
-        <button className="google-btn" onClick={() => setAuthNotice(true)}>
-          <span className="google-g">G</span>Continue with Google
-        </button>
+        <a className="google-btn" href="/oauth2/authorization/google">
+          <span className="google-g" aria-hidden="true">
+            G
+          </span>
+          Continue with Google
+        </a>
         <p className="signin-help">
           Your workspace is personal. Your job search stays yours.
         </p>
-        {authNotice && (
-          <div className="auth-note" role="status">
-            Google sign-in will be connected with the backend. This version is a
-            UI preview.
-          </div>
+        {new URLSearchParams(window.location.search).get("login") ===
+          "failed" && (
+          <p role="alert">Google sign-in failed. Please try again.</p>
         )}
-        <button className="text-btn" onClick={() => go("Overview")}>
-          <ArrowLeft size={16} /> Back to design preview
-        </button>
       </div>
     </main>
   );

@@ -19,9 +19,10 @@ import {
 } from "@/components/ui/select";
 
 import { Choice } from "@/components/common";
-import { stages } from "@/data/demo";
+import { stages } from "@/lib/constants";
 
 export default function EntryDialog({
+  busy,
   modal,
   setModal,
   submit,
@@ -209,7 +210,7 @@ export default function EntryDialog({
             >
               Cancel
             </button>
-            <button className="primary" type="submit">
+            <button className="primary" type="submit" disabled={busy}>
               {modal === "application"
                 ? "Save application"
                 : modal === "interview"

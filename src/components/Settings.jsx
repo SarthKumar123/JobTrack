@@ -2,12 +2,7 @@ import { ArrowUpRight } from "lucide-react";
 
 import { Switch } from "@/components/ui/switch";
 
-export default function Settings({
-  theme,
-  changeTheme,
-  setPage,
-  setAuthNotice,
-}) {
+export default function Settings({ theme, changeTheme, profile, logout }) {
   return (
     <div className="settings-grid">
       <article className="panel settings-card appearance-card">
@@ -32,45 +27,31 @@ export default function Settings({
       <article className="panel settings-card">
         <h2>Your profile</h2>
         <div className="settings-profile">
-          <span className="avatar">SK</span>
+          <span className="avatar">{(profile.name || "User").slice(0, 1)}</span>
           <div>
-            <strong>Sarth Kumar</strong>
-            <p>Sample profile</p>
+            <strong>{profile.name}</strong>
+            <p>{profile.email}</p>
           </div>
         </div>
         <label>
           Name
-          <input value="Sarth Kumar" readOnly />
+          <input value={profile.name || ""} readOnly />
         </label>
         <label>
           Time zone
           <input value="Asia/Kolkata (IST)" readOnly />
         </label>
-        <p className="muted">
-          Your Google profile will be used when sign-in is connected.
-        </p>
+        <p className="muted">Signed in with your Google account.</p>
       </article>
       <article className="panel settings-card">
-        <h2>Design preview</h2>
+        <h2>Your account</h2>
         <p>
-          You’re exploring sample applications. Changes last until you refresh
-          this page.
+          Your applications, interviews and follow-ups are saved privately to
+          your account.
         </p>
-        <button
-          className="secondary"
-          onClick={() => {
-            setPage("Sign in");
-            setAuthNotice(false);
-          }}
-        >
-          Preview Google sign-in <ArrowUpRight size={16} />
+        <button className="secondary" onClick={logout}>
+          Sign out <ArrowUpRight size={16} />
         </button>
-        <hr />
-        <h3>Your account</h3>
-        <p>
-          Account deletion and saved preferences will be available with the
-          backend.
-        </p>
       </article>
     </div>
   );

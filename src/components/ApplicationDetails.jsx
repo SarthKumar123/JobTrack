@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { CalendarDays, ExternalLink, FileText } from "lucide-react";
 
 import {
@@ -9,17 +10,19 @@ import {
 } from "@/components/ui/sheet";
 
 import { Company, Choice } from "@/components/common";
-import { stages } from "@/data/demo";
+import { stages } from "@/lib/constants";
 import { dateLabel } from "@/lib/dates";
 
 export default function ApplicationDetails({
   app,
   setDetail,
   changeStage,
-  setApps,
+  saveNotes,
+  busy,
   add,
   setRelated,
 }) {
+  const [notes, setNotes] = useState(app?.notes || "");
   return (
     <Sheet open={!!app} onOpenChange={(o) => !o && setDetail(null)}>
       <SheetContent className="detail-sheet">
@@ -63,16 +66,18 @@ export default function ApplicationDetails({
               Job description / notes
               <textarea
                 rows={6}
-                value={app.notes}
-                onChange={(e) =>
-                  setApps((all) =>
-                    all.map((a) =>
-                      a.id === app.id ? { ...a, notes: e.target.value } : a,
-                    ),
-                  )
-                }
+                value={notes}
+                maxLength={5000}
+                onChange={(event) => setNotes(event.target.value)}
               />
             </label>
+            <button
+              className="primary"
+              disabled={busy || notes === app.notes}
+              onClick={() => saveNotes(app.id, notes)}
+            >
+              Save notes
+            </button>
             <div className="detail-section">
               <h3>Application timeline</h3>
               <div className="timeline">

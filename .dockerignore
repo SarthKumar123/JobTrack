@@ -1,5 +1,8 @@
 node_modules
+.git
 dist
-package-lock.json
 backend/target
 backend/data
+.env
+.env.*
+*.log

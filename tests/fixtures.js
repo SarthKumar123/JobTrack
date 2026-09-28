@@ -1,12 +1,3 @@
-export const stages = [
-  "Saved",
-  "Applied",
-  "Screening",
-  "Interview",
-  "Offer",
-  "Rejected",
-  "Withdrawn",
-];
 export const seeds = [
   {
     id: "1",

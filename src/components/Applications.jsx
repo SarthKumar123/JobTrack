@@ -3,7 +3,7 @@ import { ArrowUpRight, Search, LayoutGrid, List } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Badge, Company, Choice } from "@/components/common";
-import { stages } from "@/data/demo";
+import { stages } from "@/lib/constants";
 import { dateLabel } from "@/lib/dates";
 
 import ApplicationTable from "@/components/ApplicationTable";

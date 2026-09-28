@@ -6,7 +6,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-import { stages } from "@/data/demo";
+import { stages } from "@/lib/constants";
 
 export default function Overview({ apps, active, interviews, go, setFilter }) {
   return (

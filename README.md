@@ -1,64 +1,97 @@
 # JobTrack
 
-A job application tracker built with React, JavaScript, Vite and Tailwind CSS.
-
-## Current scope
-
-This is a **frontend prototype with sample data**. Google sign-in, Gmail sync, a Spring Boot backend and a database are planned, not implemented. Application, interview and follow-up changes are held in memory and reset when the page reloads. The light/dark preference is saved in your browser.
+A private job application tracker using React (JavaScript), Spring Boot, Spring Security and MySQL.
 
 ## Features
 
+- Google sign-in with server-side sessions
+- Applications, stage history, notes, interviews and follow-ups saved per user
 - Overview with summary cards and an application pipeline
-- Application list and board, search and filters
-- Add applications, edit stages and notes, and view stage history
-- Schedule interviews and manage follow-up tasks
-- Light/dark theme in Settings
-- Responsive layout and mobile navigation
+- Search, filters, list/board views and mobile navigation
+- Light/dark theme saved in the browser
 
-The demo uses September 2026 dates. Company names and sample roles illustrate the interface; they are not verified vacancies.
+Gmail inbox access and automated status suggestions are **not implemented yet**. No Gmail permissions are requested. New accounts start with an empty workspace. Sample data exists only in automated tests.
 
-## Run on your PC
+## Run locally
 
-Install Node.js 22.13 or newer. Extract this folder, open a terminal inside it, and run:
+Requirements: Java 17+, Maven 3.6.3+, Node.js 22.13+, and Google OAuth credentials. MySQL is optional for the first local run.
+
+### Google OAuth setup
+
+Create a **Web application** OAuth client in your Google Cloud project. Configure your consent screen and add test users if your OAuth app is in testing mode.
+
+Add this exact authorized redirect URI for the Vite development server:
+
+```
+http://localhost:5173/login/oauth2/code/google
+```
+
+Set the credentials as environment variables in the terminal running Spring Boot. Do not put them in React code or commit them to Git.
+
+PowerShell:
+
+```powershell
+$env:GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+$env:GOOGLE_CLIENT_SECRET="your-client-secret"
+cd backend
+mvn spring-boot:run "-Dspring-boot.run.profiles=local"
+```
+
+The `local` profile uses a persistent H2 database in `backend/data/` so you can start without installing MySQL. It still requires Google sign-in; there is no authentication bypass. The application does not automatically load `.env` files; `backend/.env.example` documents the variable names.
+
+In a second terminal, from the repository root:
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Open the local URL printed in the terminal (usually http://localhost:5173).
+Open http://localhost:5173. Vite forwards `/api`, `/oauth2` and `/login` to Spring Boot on port 8080. Keep the same hostname throughout sign-in; do not switch between `localhost` and `127.0.0.1`.
 
-To create and preview the production build:
+### Use MySQL
+
+Create a database named `jobtrack` and a database user with access to it. Set `DB_URL`, `DB_USERNAME` and `DB_PASSWORD`, then run the backend **without** the `local` profile:
 
 ```bash
+cd backend
+mvn spring-boot:run
+```
+
+Example JDBC URL: `jdbc:mysql://localhost:3306/jobtrack`. Flyway creates the schema; Hibernate validates it rather than changing it automatically.
+
+## Production build
+
+```bash
+npm ci
 npm run build
-npm run preview
+cd backend
+mvn clean package
 ```
 
-## Upload to the empty GitHub repository
+The JAR includes the compiled React assets. Run `java -jar target/jobtrack-0.2.0.jar` with database and Google environment variables configured.
 
-If the repository is still empty, run these commands from this folder after installing Git:
+For a local JAR run on port 8080, set `FRONTEND_URL=http://localhost:8080` and register `http://localhost:8080/login/oauth2/code/google` in Google Cloud.
 
-```bash
-git init
-git add .
-git commit -m "Add JobTrack frontend"
-git branch -M main
-git remote add origin https://github.com/SarthKumar123/JobTrack.git
-git push -u origin main
-```
+A multi-stage `Dockerfile` is included for a single deployment serving both React and the API. For HTTPS hosting:
 
-Sign in to your own GitHub account when Git requests authentication. If the remote already has files, clone it first and copy these project files into the clone before committing. Do not force-push over existing work.
+- Set `FRONTEND_URL` to your public HTTPS origin.
+- Set `COOKIE_SECURE=true` and configure MySQL credentials.
+- Register `https://YOUR_HOST/login/oauth2/code/google` as the Google redirect URI.
+- If your hosting provider terminates TLS at a trusted proxy, set `SERVER_FORWARD_HEADERS_STRATEGY=framework`. The proxy must overwrite forwarded headers.
 
-## Project structure
+Sessions are stored in the running application, so users sign in again after a restart. Run one application instance until a shared session store is added. No hosting service is configured or deployed by this repository.
 
-- `src/App.jsx`: shared application state and screen navigation
-- `src/components`: screens, forms, application details and reusable UI
-- `src/data/demo.js`: clearly separated sample data
-- `src/hooks`: theme persistence and mobile detection
-- `src/lib`: date formatting and CSS class utilities
-- `src/index.css`: application layout and themes
-- `tests/App.test.jsx`: main user workflow checks
+## Structure
+
+- `src/App.jsx`: workspace state and API actions
+- `src/components`: screens, forms and reusable UI
+- `src/lib/api.js`: requests, CSRF tokens and API errors
+- `backend/src/main/java/com/jobtrack/config`: login, sessions and validation errors
+- `backend/src/main/java/com/jobtrack/workspace`: controllers, service, repositories, entities and request/response records
+- `backend/src/main/resources/db/migration`: versioned SQL schema
+- `tests`: frontend workflow tests with a mock API
+
+The backend gets the owner from the authenticated Google subject, never from the request body. Every record lookup checks that owner. Related interviews and follow-ups are checked against an owned application. Writes require Spring Security's CSRF token. Login uses only `openid`, `profile` and `email` scopes.
 
 ## Checks
 
@@ -67,10 +100,8 @@ npm run lint
 npm test
 npm run build
 npm run format:check
+cd backend
+mvn test
 ```
 
-The automated workflow tests cover pipeline filtering, adding an application, changing its stage, linking an interview, completing follow-ups, theme persistence, invalid links and mobile menu navigation. They use a simulated DOM; actual phone rendering and Windows installation still need manual checks.
-
-## Next steps
-
-Build a Spring Boot API and database, add Google OAuth login and per-user data, then add optional Gmail read-only sync with user-reviewed status suggestions. This repository contains no Spring code or placeholder backend. Never commit OAuth secrets or email tokens to the frontend.
+Backend integration tests use H2 and simulated OIDC users. They test authentication, CSRF, persistence, user isolation, history and input validation. Frontend tests use a simulated DOM. Real Google sign-in, MySQL deployment and actual phone rendering require environment-specific checks.
