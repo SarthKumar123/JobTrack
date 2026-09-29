@@ -33,7 +33,11 @@ export default function App() {
 
 function Workspace({ profile, initialData, signOut }) {
   const [theme, changeTheme] = useTheme();
-  const [page, setPage] = useState("Overview");
+  const [page, setPage] = useState(() =>
+    new URLSearchParams(window.location.search).has("gmail")
+      ? "Settings"
+      : "Overview",
+  );
   const [apps, setApps] = useState(initialData.apps);
   const [interviews, setInterviews] = useState(initialData.interviews);
   const [tasks, setTasks] = useState(initialData.tasks);
@@ -335,6 +339,13 @@ function Workspace({ profile, initialData, signOut }) {
           )}
           {page === "Settings" && (
             <Settings
+              apps={apps}
+              onApproved={(saved) =>
+                setApps((current) => [
+                  saved,
+                  ...current.filter((app) => app.id !== saved.id),
+                ])
+              }
               theme={theme}
               changeTheme={changeTheme}
               profile={profile}

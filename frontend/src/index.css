@@ -1529,3 +1529,37 @@ label {
     justify-content: space-between;
   }
 }
+
+.inbox-sync {
+  grid-column: 1 / -1;
+}
+.inbox-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+.inbox-suggestion {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-top: 20px;
+  overflow-wrap: anywhere;
+}
+.inbox-suggestion fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.inbox-suggestion select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: inherit;
+}
+.inbox-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}

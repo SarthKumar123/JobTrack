@@ -15,6 +15,8 @@ export function mockApi() {
       return respond({ headerName: "X-CSRF-TOKEN", token: "test-token" });
     if (path === "/api/me")
       return respond({ name: "Sarth Kumar", email: "test@example.com" });
+    if (path === "/api/gmail")
+      return respond({ connected: false, suggestions: [] });
     if (path === "/api/workspace") return respond(data);
     if (path === "/api/logout")
       return Promise.resolve(new Response(null, { status: 204 }));

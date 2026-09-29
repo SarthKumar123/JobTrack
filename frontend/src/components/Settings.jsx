@@ -1,10 +1,19 @@
+import InboxSync from "@/components/InboxSync";
 import { ArrowUpRight } from "lucide-react";
 
 import { Switch } from "@/components/ui/switch";
 
-export default function Settings({ theme, changeTheme, profile, logout }) {
+export default function Settings({
+  theme,
+  changeTheme,
+  profile,
+  logout,
+  apps,
+  onApproved,
+}) {
   return (
     <div className="settings-grid">
+      <InboxSync apps={apps} onApproved={onApproved} />
       <article className="panel settings-card appearance-card">
         <div>
           <h2>Appearance</h2>
