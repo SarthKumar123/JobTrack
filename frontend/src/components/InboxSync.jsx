@@ -204,7 +204,8 @@ function Suggestion({ suggestion, apps, busy, approve, dismiss }) {
       <p>{suggestion.snippet}</p>
       <p>
         <strong>Suggested: {suggestion.stage}.</strong> {suggestion.reason}{" "}
-        Keyword matching can be wrong; check the email before approving.
+        Company, role and stage suggestions can be wrong. Check and edit them
+        before approving; unclear fields are left blank.
       </p>
       <fieldset disabled={busy}>
         <label>
@@ -222,15 +223,28 @@ function Suggestion({ suggestion, apps, busy, approve, dismiss }) {
           <div className="inbox-fields">
             <label>
               Company
-              <input name="company" required maxLength={100} />
+              <input
+                name="company"
+                required
+                maxLength={100}
+                defaultValue={suggestion.company || ""}
+              />
             </label>
             <label>
               Role
-              <input name="role" required maxLength={150} />
+              <input
+                name="role"
+                required
+                maxLength={150}
+                defaultValue={suggestion.role || ""}
+              />
             </label>
             <label>
               Work mode
-              <select name="mode">
+              <select name="mode" required defaultValue={suggestion.mode || ""}>
+                <option value="" disabled>
+                  Select work mode
+                </option>
                 <option>Remote</option>
                 <option>Hybrid</option>
                 <option>On-site</option>

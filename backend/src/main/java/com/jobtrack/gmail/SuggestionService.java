@@ -23,7 +23,7 @@ public class SuggestionService {
         this.workspace = workspace;
     }
     public record View(String id, String subject, String sender, String snippet, String stage,
-            String reason, LocalDate date) {}
+            String reason, LocalDate date, String company, String role, String mode) {}
     public record Approval(@Size(max = 100) String appId,
             @NotNull @Pattern(regexp = "Saved|Applied|Screening|Interview|Offer|Rejected|Withdrawn") String stage,
             @Valid ApplicationInput application) {}
@@ -31,7 +31,11 @@ public class SuggestionService {
     @Transactional(readOnly = true)
     public List<View> pending(String owner) {
         return repository.findByOwnerIdAndStatusOrderByDateDesc(owner, "Pending").stream()
-                .map(s -> new View(s.id, s.subject, s.sender, s.snippet, s.stage, s.reason, s.date)).toList();
+                .map(s -> {
+                    var details = EmailDetails.extract(s.subject, s.snippet);
+                    return new View(s.id, s.subject, s.sender, s.snippet, s.stage, s.reason, s.date,
+                            details.company(), details.role(), details.mode());
+                }).toList();
     }
 
     public int ingest(String owner, List<GmailClient.Message> messages) {

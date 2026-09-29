@@ -49,6 +49,7 @@ it("creates an application from user-entered company and role", async () => {
   await screen.findByText("Interview invitation");
   await user.type(screen.getByLabelText("Company"), "Acme");
   await user.type(screen.getByLabelText("Role"), "Developer");
+  await user.selectOptions(screen.getByLabelText("Work mode"), "Hybrid");
   api.mockResolvedValueOnce({ id: "new", company: "Acme" });
   await user.click(
     screen.getByRole("button", { name: "Approve new application" }),
@@ -101,4 +102,46 @@ it("disconnects and clears previews while retaining applications", async () => {
     screen.getByRole("button", { name: "Connect Gmail" }),
   ).toBeInTheDocument();
   expect(approved).not.toHaveBeenCalled();
+});
+
+it("prefills extracted details while keeping them editable and unknown mode unselected", async () => {
+  api.mockResolvedValueOnce({
+    connected: true,
+    suggestions: [
+      {
+        ...suggestion,
+        company: "Infor",
+        role: "Software Engineer, Associate",
+        mode: "",
+      },
+    ],
+  });
+  const user = userEvent.setup();
+  render(<InboxSync apps={[]} onApproved={vi.fn()} />);
+  await screen.findByText("Interview invitation");
+  expect(screen.getByLabelText("Company")).toHaveValue("Infor");
+  expect(screen.getByLabelText("Role")).toHaveValue(
+    "Software Engineer, Associate",
+  );
+  expect(screen.getByLabelText("Work mode")).toHaveValue("");
+  expect(screen.getByLabelText("Work mode")).toBeInvalid();
+  await user.clear(screen.getByLabelText("Company"));
+  await user.type(screen.getByLabelText("Company"), "Edited company");
+  await user.selectOptions(screen.getByLabelText("Work mode"), "On-site");
+  api.mockResolvedValueOnce({ id: "new" });
+  await user.click(
+    screen.getByRole("button", { name: "Approve new application" }),
+  );
+  expect(api).toHaveBeenLastCalledWith(
+    "/api/gmail/suggestions/mail-1/approve",
+    expect.objectContaining({
+      body: expect.objectContaining({
+        application: expect.objectContaining({
+          company: "Edited company",
+          role: "Software Engineer, Associate",
+          mode: "On-site",
+        }),
+      }),
+    }),
+  );
 });
