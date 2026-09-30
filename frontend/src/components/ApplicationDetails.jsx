@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, ExternalLink, FileText } from "lucide-react";
+import { CalendarDays, ExternalLink, FileText, Trash2 } from "lucide-react";
 
 import {
   Sheet,
@@ -18,6 +18,7 @@ export default function ApplicationDetails({
   setDetail,
   changeStage,
   saveNotes,
+  deleteApplication,
   busy,
   add,
   setRelated,
@@ -100,6 +101,19 @@ export default function ApplicationDetails({
             >
               <CalendarDays size={16} />
               Schedule interview
+            </button>
+            <button
+              className="danger-button"
+              disabled={busy}
+              onClick={() => {
+                const confirmed = window.confirm(
+                  `Permanently remove ${app.company} — ${app.role}? This also deletes its interviews and follow-ups. This cannot be undone.`,
+                );
+                if (confirmed) deleteApplication(app.id);
+              }}
+            >
+              <Trash2 size={16} />
+              Remove permanently
             </button>
           </div>
         )}
