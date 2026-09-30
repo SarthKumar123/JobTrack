@@ -176,6 +176,56 @@ class GmailApiTest {
             .andExpect(status().isOk()).andExpect(jsonPath("$.stage").value("Interview"))
             .andExpect(jsonPath("$.history.length()").value(2));
     }
+
+    @Test void approvalUpdatesMatchingCompanyAndRoleInsteadOfCreatingDuplicate() throws Exception {
+        suggestions.ingest(owner, List.of(message("apply-acme", "Application received")));
+        String first = suggestions.pending(owner).get(0).id();
+        String applied = """
+            {"stage":"Applied","application":{"company":"Acme Technologies","role":"Java Developer",
+            "location":"","mode":"Remote","stage":"Applied","date":"2026-09-28",
+            "url":"","notes":"","resume":""}}
+            """;
+        mvc.perform(post("/api/gmail/suggestions/{id}/approve", first).with(account(owner)).with(csrf())
+            .contentType(MediaType.APPLICATION_JSON).content(applied))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.stage").value("Applied"));
+
+        suggestions.ingest(owner, List.of(message("screen-acme", "Online assessment")));
+        String second = suggestions.pending(owner).get(0).id();
+        String screening = """
+            {"stage":"Screening","application":{"company":"  ACME   Technologies ","role":"java developer",
+            "location":"","mode":"Remote","stage":"Screening","date":"2026-09-29",
+            "url":"","notes":"","resume":""}}
+            """;
+        mvc.perform(post("/api/gmail/suggestions/{id}/approve", second).with(account(owner)).with(csrf())
+            .contentType(MediaType.APPLICATION_JSON).content(screening))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.stage").value("Screening"))
+            .andExpect(jsonPath("$.history.length()").value(2));
+
+        mvc.perform(get("/api/workspace").with(account(owner)))
+            .andExpect(jsonPath("$.apps.length()").value(1))
+            .andExpect(jsonPath("$.apps[0].company").value("Acme Technologies"))
+            .andExpect(jsonPath("$.apps[0].stage").value("Screening"));
+    }
+
+    @Test void olderMatchingEmailCannotMoveApplicationBackward() throws Exception {
+        suggestions.ingest(owner, List.of(message("interview-acme", "Interview invitation")));
+        String first = suggestions.pending(owner).get(0).id();
+        suggestions.approve(owner, first, new SuggestionService.Approval(null, "Interview",
+            new com.jobtrack.workspace.ApiModels.ApplicationInput("Acme", "Developer", "", "Remote",
+                "Interview", java.time.LocalDate.of(2026, 9, 30), "", "", "")));
+
+        suggestions.ingest(owner, List.of(message("old-apply-acme", "Application received")));
+        String second = suggestions.pending(owner).get(0).id();
+        var result = suggestions.approve(owner, second, new SuggestionService.Approval(null, "Applied",
+            new com.jobtrack.workspace.ApiModels.ApplicationInput("acme", "developer", "", "Remote",
+                "Applied", java.time.LocalDate.of(2026, 9, 28), "", "", "")));
+
+        assertEquals("Interview", result.stage());
+        assertEquals(1, result.history().size());
+        mvc.perform(get("/api/workspace").with(account(owner)))
+            .andExpect(jsonPath("$.apps.length()").value(1))
+            .andExpect(jsonPath("$.apps[0].stage").value("Interview"));
+    }
     @Test void rulesSkipAlertsAndPrioritizeRejectionsOverQuotedConfirmations() {
         assertNull(EmailRules.classify("Job alert: Java", "Thank you for applying"));
         assertNull(EmailRules.classify("Dinner", "See you tomorrow"));

@@ -113,6 +113,31 @@ class WorkspaceApiTest {
     }
 
     @Test
+    void deletingApplicationAlsoDeletesItsInterviewsAndFollowUps() throws Exception {
+        String id = createApplication();
+        mvc.perform(post("/api/interviews").with(account(owner)).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"appId":"%s","round":"Technical","date":"2026-09-29","time":"14:30",
+                         "link":"","notes":"Java"}
+                        """.formatted(id)))
+                .andExpect(status().isCreated());
+        mvc.perform(post("/api/tasks").with(account(owner)).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"appId\":\"" + id + "\",\"title\":\"Follow up\",\"date\":\"2026-09-30\"}"))
+                .andExpect(status().isCreated());
+
+        mvc.perform(delete("/api/applications/{id}", id).with(account(other)).with(csrf()))
+                .andExpect(status().isNotFound());
+        mvc.perform(delete("/api/applications/{id}", id).with(account(owner)).with(csrf()))
+                .andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/workspace").with(account(owner)))
+                .andExpect(jsonPath("$.apps").isEmpty())
+                .andExpect(jsonPath("$.interviews").isEmpty())
+                .andExpect(jsonPath("$.tasks").isEmpty());
+    }
+
+    @Test
     void invalidFieldsAndUnsafeLinksAreRejected() throws Exception {
         mvc.perform(post("/api/applications").with(account(owner)).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))

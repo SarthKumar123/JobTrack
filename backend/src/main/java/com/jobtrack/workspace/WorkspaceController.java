@@ -41,6 +41,12 @@ public class WorkspaceController {
         return service.saveNotes(user.getSubject(), id, input);
     }
 
+    @DeleteMapping("/applications/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteApplication(@AuthenticationPrincipal OidcUser user, @PathVariable String id) {
+        service.deleteApplication(user.getSubject(), id);
+    }
+
     @PostMapping("/interviews")
     @ResponseStatus(HttpStatus.CREATED)
     public InterviewView createInterview(@AuthenticationPrincipal OidcUser user,

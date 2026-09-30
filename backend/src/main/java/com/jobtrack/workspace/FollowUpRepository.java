@@ -7,4 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 interface FollowUpRepository extends JpaRepository<FollowUp, String> {
     List<FollowUp> findByOwnerIdOrderByDateDesc(String ownerId);
     Optional<FollowUp> findByIdAndOwnerId(String id, String ownerId);
+    void deleteByOwnerIdAndAppId(String ownerId, String appId);
 }
