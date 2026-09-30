@@ -207,6 +207,52 @@ class GmailApiTest {
             .andExpect(jsonPath("$.apps[0].stage").value("Screening"));
     }
 
+    @Test void newerEmailFallsBackToSingleActiveApplicationAtSameCompany() throws Exception {
+        suggestions.ingest(owner, List.of(message("hcs-apply", "Application received")));
+        String first = suggestions.pending(owner).get(0).id();
+        var original = suggestions.approve(owner, first, new SuggestionService.Approval(null, "Applied",
+            new com.jobtrack.workspace.ApiModels.ApplicationInput(
+                "Hindustan Consulting Services India Private Limited", "SOFTWARE DEVELOPER- Fresher",
+                "", "On-site", "Applied", java.time.LocalDate.of(2026, 9, 30), "", "", "")));
+
+        suggestions.ingest(owner, List.of(message("hcs-screen", "Online assessment")));
+        String second = suggestions.pending(owner).get(0).id();
+        var updated = suggestions.approve(owner, second, new SuggestionService.Approval(null, "Screening",
+            new com.jobtrack.workspace.ApiModels.ApplicationInput(
+                "Hindustan Consulting Services India Private Limited", "Associate Software Engineer",
+                "", "On-site", "Screening", java.time.LocalDate.of(2026, 10, 1), "", "", "")));
+
+        assertEquals(original.id(), updated.id());
+        assertEquals("SOFTWARE DEVELOPER- Fresher", updated.role());
+        assertEquals("Screening", updated.stage());
+        assertEquals(2, updated.history().size());
+        mvc.perform(get("/api/workspace").with(account(owner)))
+            .andExpect(jsonPath("$.apps.length()").value(1));
+    }
+
+    @Test void companyFallbackDoesNotMergeWhenMultipleActiveRolesExist() throws Exception {
+        suggestions.ingest(owner, List.of(message("acme-one", "Application received")));
+        String first = suggestions.pending(owner).get(0).id();
+        suggestions.approve(owner, first, new SuggestionService.Approval(null, "Applied",
+            new com.jobtrack.workspace.ApiModels.ApplicationInput("Acme", "Java Developer", "", "Remote",
+                "Applied", java.time.LocalDate.of(2026, 9, 28), "", "", "")));
+
+        suggestions.ingest(owner, List.of(message("acme-two", "Application received")));
+        String second = suggestions.pending(owner).get(0).id();
+        suggestions.approve(owner, second, new SuggestionService.Approval(null, "Applied",
+            new com.jobtrack.workspace.ApiModels.ApplicationInput("Acme", "Backend Engineer", "", "Remote",
+                "Applied", java.time.LocalDate.of(2026, 9, 29), "", "", "")));
+
+        suggestions.ingest(owner, List.of(message("acme-screen", "Online assessment")));
+        String third = suggestions.pending(owner).get(0).id();
+        suggestions.approve(owner, third, new SuggestionService.Approval(null, "Screening",
+            new com.jobtrack.workspace.ApiModels.ApplicationInput("Acme", "Software Engineer", "", "Remote",
+                "Screening", java.time.LocalDate.of(2026, 10, 1), "", "", "")));
+
+        mvc.perform(get("/api/workspace").with(account(owner)))
+            .andExpect(jsonPath("$.apps.length()").value(3));
+    }
+
     @Test void olderMatchingEmailCannotMoveApplicationBackward() throws Exception {
         suggestions.ingest(owner, List.of(message("interview-acme", "Interview invitation")));
         String first = suggestions.pending(owner).get(0).id();
