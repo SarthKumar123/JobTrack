@@ -41,6 +41,11 @@ export default function SignIn() {
         <p className="signin-help">
           Your workspace is personal. Your job search stays yours.
         </p>
+        <p className="signin-legal">
+          <a href="/privacy">Privacy Policy</a>
+          <span aria-hidden="true"> · </span>
+          <a href="/terms">Terms of Service</a>
+        </p>
         <nav className="signin-legal" aria-label="Legal">
           <a href="/privacy">Privacy Policy</a>
           <span>·</span>
