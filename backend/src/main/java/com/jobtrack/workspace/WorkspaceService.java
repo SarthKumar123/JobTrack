@@ -3,8 +3,11 @@ package com.jobtrack.workspace;
 import static com.jobtrack.workspace.ApiModels.*;
 
 import java.net.URI;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Comparator;
+import java.util.Locale;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,6 +60,25 @@ public class WorkspaceService {
         return view(application);
     }
 
+    public ApplicationView createOrUpdateFromEmail(String owner, ApplicationInput input) {
+        Application application = applications.findByOwnerIdOrderByDateDesc(owner).stream()
+                .filter(existing -> sameApplication(existing, input))
+                .max(Comparator.comparing(this::latestStageDate))
+                .orElse(null);
+
+        if (application == null) return createApplication(owner, input);
+
+        LocalDate latest = latestStageDate(application);
+        if (input.date().isBefore(latest) || !canAdvanceAutomatically(application.stage, input.stage()))
+            return view(application);
+
+        if (!application.stage.equals(input.stage())) {
+            application.stage = input.stage();
+            application.history.add(new StageEvent(input.stage(), input.date()));
+        }
+        return view(application);
+    }
+
     public ApplicationView saveNotes(String owner, String id, NotesInput input) {
         Application application = ownedApplication(owner, id);
         application.notes = input.notes();
@@ -96,6 +118,42 @@ public class WorkspaceService {
     private Application ownedApplication(String owner, String id) {
         return applications.findByIdAndOwnerId(id, owner)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    private boolean sameApplication(Application application, ApplicationInput input) {
+        return normalize(application.company).equals(normalize(input.company()))
+                && normalize(application.role).equals(normalize(input.role()));
+    }
+
+    private String normalize(String value) {
+        return Normalizer.normalize(value, Normalizer.Form.NFKC)
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^\\p{L}\\p{N}]+", " ")
+                .trim()
+                .replaceAll("\\s+", " ");
+    }
+
+    private LocalDate latestStageDate(Application application) {
+        return application.history.stream().map(event -> event.date).max(LocalDate::compareTo)
+                .orElse(application.date);
+    }
+
+    private boolean canAdvanceAutomatically(String current, String next) {
+        if (current.equals(next)) return true;
+        if ("Offer".equals(current) || "Rejected".equals(current) || "Withdrawn".equals(current))
+            return false;
+        if ("Offer".equals(next) || "Rejected".equals(next)) return true;
+        return stageRank(next) > stageRank(current);
+    }
+
+    private int stageRank(String stage) {
+        return switch (stage) {
+            case "Saved" -> 0;
+            case "Applied" -> 1;
+            case "Screening" -> 2;
+            case "Interview" -> 3;
+            default -> -1;
+        };
     }
 
     private String webLink(String value) {
