@@ -85,6 +85,13 @@ public class WorkspaceService {
         return view(application);
     }
 
+    public void deleteApplication(String owner, String id) {
+        Application application = ownedApplication(owner, id);
+        interviews.deleteByOwnerIdAndAppId(owner, id);
+        followUps.deleteByOwnerIdAndAppId(owner, id);
+        applications.delete(application);
+    }
+
     public InterviewView createInterview(String owner, InterviewInput input) {
         Application application = ownedApplication(owner, input.appId());
         Interview interview = new Interview();
