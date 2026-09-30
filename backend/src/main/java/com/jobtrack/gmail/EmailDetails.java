@@ -20,33 +20,51 @@ public final class EmailDetails {
     private static final Pattern MODE = rule("\\b(?:work mode|work arrangement|workplace type)\\s*:\\s*(remote|hybrid|on[- ]site)\\b");
 
     public static Details extract(String subject, String snippet) {
-        Map<String, String> companies = new LinkedHashMap<>(), roles = new LinkedHashMap<>(), modes = new LinkedHashMap<>();
-        for (String source : new String[] { subject, snippet }) {
-            String text = source == null ? "" : source.replaceAll("[\\t\\r ]+", " ");
-            for (Pattern pattern : PAIRS) {
-                var matcher = pattern.matcher(text);
-                while (matcher.find()) {
-                    add(roles, matcher.group(1), false);
-                    add(companies, matcher.group(2), true);
-                }
-            }
-            var positionOfRole = POSITION_OF_ROLE.matcher(text);
-            while (positionOfRole.find()) add(roles, positionOfRole.group(1), false);
-            var role = ROLE.matcher(text);
-            while (role.find()) add(roles, role.group(1), false);
-            var company = COMPANY.matcher(text);
-            while (company.find()) add(companies, company.group(1), true);
-            var mode = MODE.matcher(text);
-            while (mode.find()) {
-                String value = switch (mode.group(1).toLowerCase(Locale.ROOT)) {
-                    case "remote" -> "Remote";
-                    case "hybrid" -> "Hybrid";
-                    default -> "On-site";
-                };
-                modes.put(value, value);
+        Map<String, String> subjectCompanies = new LinkedHashMap<>(), subjectRoles = new LinkedHashMap<>(),
+                subjectModes = new LinkedHashMap<>();
+        Map<String, String> snippetCompanies = new LinkedHashMap<>(), snippetRoles = new LinkedHashMap<>(),
+                snippetModes = new LinkedHashMap<>();
+        collect(subject, subjectCompanies, subjectRoles, subjectModes);
+        collect(snippet, snippetCompanies, snippetRoles, snippetModes);
+
+        String company = firstClear(subjectCompanies, snippetCompanies);
+        String role = firstClear(subjectRoles, snippetRoles);
+        String mode = firstClear(subjectModes, snippetModes);
+        return new Details(company, role, mode);
+    }
+
+    private static void collect(String source, Map<String, String> companies,
+            Map<String, String> roles, Map<String, String> modes) {
+        String text = source == null ? "" : source.replaceAll("[\\t\\r ]+", " ");
+        for (Pattern pattern : PAIRS) {
+            var matcher = pattern.matcher(text);
+            while (matcher.find()) {
+                add(roles, matcher.group(1), false);
+                add(companies, matcher.group(2), true);
             }
         }
-        return new Details(single(companies), single(roles), single(modes));
+        var positionOfRole = POSITION_OF_ROLE.matcher(text);
+        while (positionOfRole.find()) add(roles, positionOfRole.group(1), false);
+        var role = ROLE.matcher(text);
+        while (role.find()) add(roles, role.group(1), false);
+        var company = COMPANY.matcher(text);
+        while (company.find()) add(companies, company.group(1), true);
+        var mode = MODE.matcher(text);
+        while (mode.find()) {
+            String value = switch (mode.group(1).toLowerCase(Locale.ROOT)) {
+                case "remote" -> "Remote";
+                case "hybrid" -> "Hybrid";
+                default -> "On-site";
+            };
+            modes.put(value, value);
+        }
+    }
+
+    private static String firstClear(Map<String, String> preferred, Map<String, String> fallback) {
+        String value = single(preferred);
+        if (!value.isBlank()) return value;
+        if (preferred.size() > 1) return "";
+        return single(fallback);
     }
 
     private static void add(Map<String, String> values, String raw, boolean company) {
