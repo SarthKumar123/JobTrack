@@ -24,12 +24,14 @@ class EmailDetailsTest {
         assertEquals("Acme", details.company());
         assertEquals(".NET Developer", details.role());
     }
-    @Test void leavesMissingOrConflictingFieldsBlank() {
+    @Test void leavesMissingFieldsBlankAndPrefersClearSubjectDetails() {
         var details = EmailDetails.extract("Application received", "Thank you for applying to our company. Remote interviews are available.");
         assertEquals(new EmailDetails.Details("", "", ""), details);
         details = EmailDetails.extract("Application for Java Developer at Acme",
                 "Application for QA Engineer at Example. Work mode: Remote. Work mode: Hybrid.");
-        assertEquals(new EmailDetails.Details("", "", ""), details);
+        assertEquals("Acme", details.company());
+        assertEquals("Java Developer", details.role());
+        assertEquals("", details.mode());
     }
     @Test void repeatedDetailsAreNotTreatedAsConflicting() {
         var details = EmailDetails.extract("Application for Java Developer at Acme",
