@@ -140,6 +140,17 @@ function Workspace({ profile, initialData, signOut }) {
     });
   }
 
+  function deleteApplication(id) {
+    return mutate(async () => {
+      await api(`/api/applications/${id}`, { method: "DELETE" });
+      setApps((current) => current.filter((item) => item.id !== id));
+      setInterviews((current) => current.filter((item) => item.appId !== id));
+      setTasks((current) => current.filter((item) => item.appId !== id));
+      setDetail(null);
+      toast.success("Application permanently removed");
+    });
+  }
+
   function complete(id) {
     const task = tasks.find((item) => item.id === id);
     mutate(async () => {
@@ -380,6 +391,7 @@ function Workspace({ profile, initialData, signOut }) {
         setDetail={setDetail}
         changeStage={changeStage}
         saveNotes={saveNotes}
+        deleteApplication={deleteApplication}
         add={add}
         setRelated={setRelated}
       />
