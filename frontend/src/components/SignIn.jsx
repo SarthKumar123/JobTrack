@@ -41,6 +41,11 @@ export default function SignIn() {
         <p className="signin-help">
           Your workspace is personal. Your job search stays yours.
         </p>
+        <nav className="signin-legal" aria-label="Legal">
+          <a href="/privacy">Privacy Policy</a>
+          <span>·</span>
+          <a href="/terms">Terms of Service</a>
+        </nav>
         {new URLSearchParams(window.location.search).get("login") ===
           "failed" && (
           <p role="alert">Google sign-in failed. Please try again.</p>
