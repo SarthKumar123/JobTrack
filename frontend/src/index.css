@@ -1563,3 +1563,31 @@ label {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
 }
+
+
+.danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 40px;
+  border-radius: 7px;
+  padding: 10px 15px;
+  font-size: 14px;
+  font-weight: 550;
+  background: #fff;
+  color: #b42318;
+  border: 1px solid #f0c7c3;
+}
+.danger-button:hover {
+  background: #fff3f2;
+  border-color: #e6a7a1;
+}
+[data-theme="dark"] .danger-button {
+  background: #24191b;
+  color: #ffaaa2;
+  border-color: #6b3733;
+}
+[data-theme="dark"] .danger-button:hover {
+  background: #321f21;
+}
