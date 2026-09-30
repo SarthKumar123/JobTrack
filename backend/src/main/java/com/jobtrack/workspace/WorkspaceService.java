@@ -61,10 +61,21 @@ public class WorkspaceService {
     }
 
     public ApplicationView createOrUpdateFromEmail(String owner, ApplicationInput input) {
-        Application application = applications.findByOwnerIdOrderByDateDesc(owner).stream()
+        var owned = applications.findByOwnerIdOrderByDateDesc(owner);
+        Application application = owned.stream()
                 .filter(existing -> sameApplication(existing, input))
                 .max(Comparator.comparing(this::latestStageDate))
                 .orElse(null);
+
+        if (application == null) {
+            var companyMatches = owned.stream()
+                    .filter(existing -> sameCompany(existing, input))
+                    .filter(existing -> isOpenStage(existing.stage))
+                    .filter(existing -> !existing.stage.equals(input.stage()))
+                    .filter(existing -> canAdvanceAutomatically(existing.stage, input.stage()))
+                    .toList();
+            if (companyMatches.size() == 1) application = companyMatches.get(0);
+        }
 
         if (application == null) return createApplication(owner, input);
 
@@ -128,8 +139,16 @@ public class WorkspaceService {
     }
 
     private boolean sameApplication(Application application, ApplicationInput input) {
-        return normalize(application.company).equals(normalize(input.company()))
+        return sameCompany(application, input)
                 && normalize(application.role).equals(normalize(input.role()));
+    }
+
+    private boolean sameCompany(Application application, ApplicationInput input) {
+        return normalize(application.company).equals(normalize(input.company()));
+    }
+
+    private boolean isOpenStage(String stage) {
+        return !"Offer".equals(stage) && !"Rejected".equals(stage) && !"Withdrawn".equals(stage);
     }
 
     private String normalize(String value) {
