@@ -61,6 +61,16 @@ export default function Settings({
         <button className="secondary" onClick={logout}>
           Sign out <ArrowUpRight size={16} />
         </button>
+        <p className="settings-legal-links">
+          <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>
+          <span> · </span>
+          <a href="/terms" target="_blank" rel="noreferrer">Terms of Service</a>
+        </p>
+        <p className="settings-legal">
+          <a href="/privacy">Privacy Policy</a>
+          <span> · </span>
+          <a href="/terms">Terms of Service</a>
+        </p>
       </article>
     </div>
   );
