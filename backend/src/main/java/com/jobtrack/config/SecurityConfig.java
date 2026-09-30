@@ -15,7 +15,7 @@ public class SecurityConfig {
             @Value("${app.frontend-url}") String frontendUrl) throws Exception {
         return http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/index.html", "/assets/**", "/favicon.svg").permitAll()
+                        .requestMatchers("/", "/privacy", "/terms", "/index.html", "/assets/**", "/favicon.svg").permitAll()
                         .requestMatchers("/api/csrf", "/oauth2/**", "/login/**", "/error").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(errors -> errors
