@@ -90,6 +90,37 @@ public class WorkspaceService {
         return view(application);
     }
 
+    public ApplicationView autoUpdateFromEmail(String owner, String company, String role,
+            String stage, LocalDate date) {
+        if (company == null || company.isBlank()) return null;
+        var owned = applications.findByOwnerIdOrderByDateDesc(owner);
+        Application application = role == null || role.isBlank() ? null : owned.stream()
+                .filter(existing -> normalize(existing.company).equals(normalize(company))
+                        && normalize(existing.role).equals(normalize(role)))
+                .max(Comparator.comparing(this::latestStageDate))
+                .orElse(null);
+
+        if (application == null) {
+            var companyMatches = owned.stream()
+                    .filter(existing -> normalize(existing.company).equals(normalize(company)))
+                    .filter(existing -> isOpenStage(existing.stage))
+                    .filter(existing -> !existing.stage.equals(stage))
+                    .filter(existing -> canAdvanceAutomatically(existing.stage, stage))
+                    .filter(existing -> !date.isBefore(latestStageDate(existing)))
+                    .toList();
+            if (companyMatches.size() == 1) application = companyMatches.get(0);
+        }
+
+        if (application == null || date.isBefore(latestStageDate(application))
+                || !canAdvanceAutomatically(application.stage, stage)) return null;
+
+        if (!application.stage.equals(stage)) {
+            application.stage = stage;
+            application.history.add(new StageEvent(stage, date));
+        }
+        return view(application);
+    }
+
     public ApplicationView saveNotes(String owner, String id, NotesInput input) {
         Application application = ownedApplication(owner, id);
         application.notes = input.notes();

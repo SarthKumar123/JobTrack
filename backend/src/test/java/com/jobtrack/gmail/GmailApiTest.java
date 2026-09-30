@@ -106,7 +106,7 @@ class GmailApiTest {
         when(client.search("test-token")).thenReturn(new GmailClient.Page(List.of(email), "next-page"));
         when(client.message("test-token", "mail-1")).thenReturn(email);
         mvc.perform(post("/api/gmail/sync").session(session).with(account(owner)).with(csrf()))
-            .andExpect(status().isOk()).andExpect(jsonPath("$.added").value(1))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.needsReview").value(1))
             .andExpect(jsonPath("$.limited").value(true));
         mvc.perform(get("/api/workspace").with(account(owner))).andExpect(jsonPath("$.apps").isEmpty());
         mvc.perform(get("/api/gmail").session(session).with(account(owner)))
@@ -115,12 +115,40 @@ class GmailApiTest {
         mvc.perform(get("/api/gmail").with(account("other"))).andExpect(jsonPath("$.suggestions").isEmpty());
         mvc.perform(post("/api/gmail/sync").session(session).with(account(owner)).with(csrf()))
             .andExpect(status().isTooManyRequests());
-        assertEquals(0, suggestions.ingest(owner, List.of(email)));
+        assertEquals(0, suggestions.ingest(owner, List.of(email)).review());
         mvc.perform(delete("/api/gmail").session(session).with(account(owner)).with(csrf()))
             .andExpect(status().isNoContent());
         mvc.perform(get("/api/gmail").session(session).with(account(owner)))
             .andExpect(jsonPath("$.connected").value(false)).andExpect(jsonPath("$.suggestions").isEmpty());
     }
+    @Test void syncAutoAppliesClearAppliedEmailAndLeavesUnclearMailForReview() throws Exception {
+        var session = new MockHttpSession();
+        connect(session);
+
+        String created = mvc.perform(post("/api/applications").with(account(owner)).with(csrf())
+            .contentType(MediaType.APPLICATION_JSON).content("""
+                {"company":"Acme","role":"Java Developer","location":"","mode":"Remote","stage":"Saved",
+                "date":"2026-09-29","url":"","notes":"","resume":""}
+                """)).andReturn().getResponse().getContentAsString();
+        String appId = JsonPath.read(created, "$.id");
+
+        var clear = message("auto-applied", "Application for Java Developer at Acme");
+        var unclear = message("needs-review", "Application received");
+        when(client.search("test-token")).thenReturn(new GmailClient.Page(List.of(clear, unclear), null));
+        when(client.message("test-token", "auto-applied")).thenReturn(clear);
+        when(client.message("test-token", "needs-review")).thenReturn(unclear);
+
+        mvc.perform(post("/api/gmail/sync").session(session).with(account(owner)).with(csrf()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.autoApplied").value(1))
+            .andExpect(jsonPath("$.needsReview").value(1))
+            .andExpect(jsonPath("$.updatedApplications[0].id").value(appId))
+            .andExpect(jsonPath("$.updatedApplications[0].stage").value("Applied"));
+
+        mvc.perform(get("/api/gmail").session(session).with(account(owner)))
+            .andExpect(jsonPath("$.suggestions.length()").value(1));
+    }
+
     @Test void approvalValidatesOwnershipInputAndCannotBeReplayed() throws Exception {
         suggestions.ingest(owner, List.of(message("mail-2", "Application received")));
         String id = suggestions.pending(owner).get(0).id();
@@ -141,7 +169,7 @@ class GmailApiTest {
         var reviewed = repository.findById(id).orElseThrow();
         assertEquals("", reviewed.snippet);
         assertEquals("", reviewed.subject);
-        assertEquals(0, suggestions.ingest(owner, List.of(message("mail-2", "Application received"))));
+        assertEquals(0, suggestions.ingest(owner, List.of(message("mail-2", "Application received"))).review());
     }
     @Test void cannotApproveIntoAnotherUsersApplicationAndDismissDoesNotChangeTracker() throws Exception {
         String created = mvc.perform(post("/api/applications").with(account("other")).with(csrf())

@@ -38,7 +38,8 @@ public class GmailController {
         return ProblemDetail.forStatusAndDetail(CONFLICT, "Another sync completed. Reload your suggestions.");
     }
     public record Status(boolean connected, List<SuggestionService.View> suggestions) {}
-    public record SyncResult(int added, boolean limited) {}
+    public record SyncResult(int autoApplied, int needsReview, boolean limited,
+            List<ApplicationView> updatedApplications) {}
     @GetMapping
     public Status status(@AuthenticationPrincipal OidcUser user, HttpSession session) {
         return new Status(connection.connected(session, user.getSubject()), suggestions.pending(user.getSubject()));
@@ -68,8 +69,9 @@ public class GmailController {
                 for (var message : page.messages().stream().limit(50).toList())
                     messages.add(client.message(token, message.id()));
             }
-            return new SyncResult(suggestions.ingest(user.getSubject(), messages),
-                    page != null && page.nextPageToken() != null);
+            var result = suggestions.ingest(user.getSubject(), messages);
+            return new SyncResult(result.autoApplied().size(), result.review(),
+                    page != null && page.nextPageToken() != null, result.autoApplied());
         }
     }
     @PostMapping("/suggestions/{id}/approve")

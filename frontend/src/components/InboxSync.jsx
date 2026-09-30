@@ -17,6 +17,7 @@ export default function InboxSync({ apps, onApproved }) {
   const [busy, setBusy] = useState(false);
   const running = useRef(false);
   const [error, setError] = useState("");
+  const [lastAutoApplied, setLastAutoApplied] = useState(0);
   const [message, setMessage] = useState(
     () =>
       outcomes[new URLSearchParams(window.location.search).get("gmail")] || "",
@@ -59,9 +60,11 @@ export default function InboxSync({ apps, onApproved }) {
   const sync = () =>
     act(async () => {
       const result = await api("/api/gmail/sync", { method: "POST" });
+      result.updatedApplications.forEach(onApproved);
+      setLastAutoApplied(result.autoApplied);
       await reload();
       setMessage(
-        `${result.added} new suggestions found.${result.limited ? " Only the first 50 matching emails were scanned." : ""}`,
+        `${result.autoApplied} auto-applied · ${result.needsReview} need review.${result.limited ? " Only the first 50 matching emails were scanned." : ""}`,
       );
     });
   const approve = (suggestion, body) =>
@@ -151,6 +154,20 @@ export default function InboxSync({ apps, onApproved }) {
         . Clearing review history means those emails can appear again after
         reconnecting.
       </p>
+      {data && (
+        <div className="inbox-sync-status">
+          {lastAutoApplied > 0 && (
+            <span className="sync-badge sync-badge-success">
+              {lastAutoApplied} auto-applied
+            </span>
+          )}
+          <span className={`sync-badge ${data.suggestions.length > 0 ? "sync-badge-review" : "sync-badge-clear"}`}>
+            {data.suggestions.length > 0
+              ? `${data.suggestions.length} need review`
+              : "No review needed"}
+          </span>
+        </div>
+      )}
       {data && <h3>Suggestions to review ({data.suggestions.length})</h3>}
       {data?.suggestions.length === 0 && (
         <p>No pending suggestions. Sync your inbox to look for updates.</p>

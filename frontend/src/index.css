@@ -1591,3 +1591,50 @@ label {
 [data-theme="dark"] .danger-button:hover {
   background: #321f21;
 }
+
+.inbox-sync-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 8px;
+}
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 650;
+  border: 1px solid transparent;
+}
+.sync-badge-success {
+  background: #ecfdf3;
+  color: #027a48;
+  border-color: #abefc6;
+}
+.sync-badge-review {
+  background: #fffaeb;
+  color: #b54708;
+  border-color: #fedf89;
+}
+.sync-badge-clear {
+  background: #f4f6fa;
+  color: #667085;
+  border-color: #e4e7ec;
+}
+[data-theme="dark"] .sync-badge-success {
+  background: #123526;
+  color: #75e0a7;
+  border-color: #216e4a;
+}
+[data-theme="dark"] .sync-badge-review {
+  background: #3b2a12;
+  color: #fec84b;
+  border-color: #7a4d13;
+}
+[data-theme="dark"] .sync-badge-clear {
+  background: #252b36;
+  color: #c7ced9;
+  border-color: #3d4553;
+}
