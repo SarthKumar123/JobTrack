@@ -75,7 +75,7 @@ public class SuggestionService {
         } else {
             var a = input.application();
             if (a == null) throw new ResponseStatusException(BAD_REQUEST, "Enter the company and role for a new application.");
-            result = workspace.createApplication(owner, new ApplicationInput(a.company(), a.role(), a.location(),
+            result = workspace.createOrUpdateFromEmail(owner, new ApplicationInput(a.company(), a.role(), a.location(),
                     a.mode(), input.stage(), a.date(), a.url(), a.notes(), a.resume()));
         }
         clear(suggestion, "Approved");
