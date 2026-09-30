@@ -37,4 +37,13 @@ class EmailDetailsTest {
         assertEquals("Acme", details.company());
         assertEquals("Java Developer", details.role());
     }
+
+    @Test void cleansPositionOfRoleBeforeBoilerplateSentence() {
+        var details = EmailDetails.extract("Your application",
+                "Thank you for applying to Hindustan Consulting Services India Private Limited. "
+                + "Your application for the position of Associate Software Engineer. "
+                + "Our team is working hard to select the person with the right credentials for this role.");
+        assertEquals("Hindustan Consulting Services India Private Limited", details.company());
+        assertEquals("Associate Software Engineer", details.role());
+    }
 }
