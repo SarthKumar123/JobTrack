@@ -27,6 +27,7 @@ public class SuggestionService {
     public record Approval(@Size(max = 100) String appId,
             @NotNull @Pattern(regexp = "Saved|Applied|Screening|Interview|Offer|Rejected|Withdrawn") String stage,
             @Valid ApplicationInput application) {}
+    public record IngestResult(int review, List<ApplicationView> autoApplied) {}
 
     @Transactional(readOnly = true)
     public List<View> pending(String owner) {
@@ -38,8 +39,9 @@ public class SuggestionService {
                 }).toList();
     }
 
-    public int ingest(String owner, List<GmailClient.Message> messages) {
-        int added = 0;
+    public IngestResult ingest(String owner, List<GmailClient.Message> messages) {
+        int review = 0;
+        var autoApplied = new java.util.ArrayList<ApplicationView>();
         for (var message : messages) {
             if (message == null || message.id() == null || message.id().length() > 100
                     || repository.existsByOwnerIdAndMessageId(owner, message.id())) continue;
@@ -51,6 +53,28 @@ public class SuggestionService {
                 date = Instant.ofEpochMilli(Long.parseLong(message.internalDate()))
                         .atZone(ZoneId.of("Asia/Kolkata")).toLocalDate();
             } catch (RuntimeException e) { continue; }
+            var details = EmailDetails.extract(subject, snippet);
+            if (("Applied".equals(match.stage()) || "Screening".equals(match.stage()))
+                    && !details.company().isBlank()) {
+                var updated = workspace.autoUpdateFromEmail(owner, details.company(), details.role(),
+                        match.stage(), date);
+                if (updated != null) {
+                    var handled = new EmailSuggestion();
+                    handled.ownerId = owner;
+                    handled.messageId = message.id();
+                    handled.subject = "";
+                    handled.sender = "";
+                    handled.snippet = "";
+                    handled.stage = match.stage();
+                    handled.reason = match.reason();
+                    handled.date = date;
+                    handled.status = "Approved";
+                    repository.save(handled);
+                    autoApplied.add(updated);
+                    continue;
+                }
+            }
+
             var suggestion = new EmailSuggestion();
             suggestion.ownerId = owner;
             suggestion.messageId = message.id();
@@ -61,9 +85,9 @@ public class SuggestionService {
             suggestion.reason = match.reason();
             suggestion.date = date;
             repository.save(suggestion);
-            added++;
+            review++;
         }
-        return added;
+        return new IngestResult(review, autoApplied);
     }
 
     public ApplicationView approve(String owner, String id, Approval input) {
