@@ -1713,3 +1713,18 @@ label {
   .legal-card h1 { font-size: 28px; }
   .legal-header { align-items: flex-start; }
 }
+
+.signin-gmail-info {
+  max-width: 560px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+}
+.signin-gmail-info h2 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+.signin-gmail-info p {
+  margin-top: 8px;
+  line-height: 1.65;
+}
